@@ -102,4 +102,4 @@ availableSecrets:
   - versionName: 'projects/$PROJECT_ID/secrets/${_KUBECONFIG_SECRET_NAME}/versions/latest'
     env: 'TELEPORT'
 
-tags: ['stack-auth', "infra-add-ons", 'release', 'deploy']
+tags: ['stack-auth', "server", 'release', 'deploy']

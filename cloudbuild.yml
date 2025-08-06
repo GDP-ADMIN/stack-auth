@@ -2,7 +2,6 @@ steps:
   - id: Run SCA
     name: gcr.io/$PROJECT_ID/secops
     entrypoint: bash
-    dir: "./"
     args:
       - "-c"
       - |-
@@ -19,7 +18,6 @@ steps:
       - "SCA_TOKEN"
 
   - id: Build & Push Image
-    dir: './'
     name: 'gcr.io/cloud-builders/docker'
     entrypoint: bash
     args:
@@ -32,9 +30,6 @@ steps:
         --cache-from ${_REGISTRY_URL}/${_PROJECT}/${_MODULE} \
         --output type=image,name=${_REGISTRY_URL}/${_PROJECT}/${_MODULE},compression-level=22,force-compression=true,push=true,compression=zstd \
         --build-arg BUILDKIT_INLINE_CACHE=1 .
-    env:
-      - "SHORT_SHA=${SHORT_SHA}"
-      - "TAG_NAME=${TAG_NAME}"
     waitFor: ['-']
 
   - id: Deployment
