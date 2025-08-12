@@ -34,13 +34,13 @@ FROM base AS builder
 
 # copy over package.json files and install dependencies
 COPY --from=pruner /app/out/json/ .
-COPY pnpm-lock.yaml .
+COPY --from=pruner /app/out/pnpm-lock.yaml .
 COPY .gitignore .
 COPY pnpm-workspace.yaml .
 COPY turbo.json .
 COPY configs ./configs
 RUN cat ./pnpm-lock.yaml
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store STACK_SKIP_TEMPLATE_GENERATION=true pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-v2,target=/pnpm/store STACK_SKIP_TEMPLATE_GENERATION=true pnpm install --frozen-lockfile
 
 # copy over the rest of the code for the build
 COPY --from=pruner /app/out/full/ .

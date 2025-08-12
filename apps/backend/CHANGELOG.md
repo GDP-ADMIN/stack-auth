@@ -2,7 +2,7 @@
 
 ## 2.8.28
 
-### Patch Changess
+### Patch Changesss
 
 - Various changes
 - Updated dependencies
