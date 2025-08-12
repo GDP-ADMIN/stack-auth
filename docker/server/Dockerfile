@@ -1,4 +1,4 @@
-ARG NODE_VERSION=22.9.0
+ARG NODE_VERSION=24.5.0
 
 # Base
 FROM node:${NODE_VERSION} AS base
@@ -13,7 +13,7 @@ ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 
 RUN corepack enable
-RUN corepack prepare pnpm@10.0.0 --activate
+RUN corepack prepare pnpm@10.5.0 --activate
 RUN pnpm add -g turbo
 RUN pnpm add -g tsx
 
@@ -40,7 +40,7 @@ COPY pnpm-workspace.yaml .
 COPY turbo.json .
 COPY configs ./configs
 RUN cat ./pnpm-lock.yaml
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store STACK_SKIP_TEMPLATE_GENERATION=true pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-v2,target=/pnpm/store STACK_SKIP_TEMPLATE_GENERATION=true pnpm install --frozen-lockfile
 
 # copy over the rest of the code for the build
 COPY --from=pruner /app/out/full/ .
