@@ -1,7 +1,6 @@
 steps:
   - id: Generate Google Token
     name: gcr.io/cloud-builders/gcloud
-    dir: "./"
     entrypoint: 'bash'
     args:
       - '-c'
@@ -10,7 +9,6 @@ steps:
   - id: Run SCA
     name: gcr.io/$PROJECT_ID/secops
     entrypoint: bash
-    dir: "./"
     args:
       - "-c"
       - |-
@@ -39,7 +37,6 @@ steps:
     waitFor: ["-"]
 
   - id: Build Image
-    dir: "./"
     name: gcr.io/cloud-builders/docker
     entrypoint: bash
     args:
@@ -58,7 +55,6 @@ steps:
       - "Generate Google Token"
 
   - id: Vulnerability Scanning
-    dir: './'
     name: 'gcr.io/$PROJECT_ID/trivyhub'
     args:
       - "image"
