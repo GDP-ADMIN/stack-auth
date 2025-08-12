@@ -34,7 +34,7 @@ FROM base AS builder
 
 # copy over package.json files and install dependencies
 COPY --from=pruner /app/out/json/ .
-COPY --from=pruner /app/out/pnpm-lock.yaml .
+COPY pnpm-lock.yaml .
 COPY .gitignore .
 COPY pnpm-workspace.yaml .
 COPY turbo.json .
