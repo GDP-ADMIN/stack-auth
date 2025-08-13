@@ -2,7 +2,6 @@ steps:
   - id: Run SCA
     name: gcr.io/$PROJECT_ID/secops
     entrypoint: bash
-    dir: "./"
     args:
       - "-c"
       - |-
@@ -19,7 +18,6 @@ steps:
       - "SCA_TOKEN"
 
   - id: Build & Push Image
-    dir: './'
     name: 'gcr.io/cloud-builders/docker'
     entrypoint: bash
     args:
