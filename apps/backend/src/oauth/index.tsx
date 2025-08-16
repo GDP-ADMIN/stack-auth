@@ -7,6 +7,7 @@ import { OAuthModel } from "./model";
 import { AppleProvider } from "./providers/apple";
 import { OAuthBaseProvider } from "./providers/base";
 import { BitbucketProvider } from "./providers/bitbucket";
+import { CatapaProvider } from "./providers/catapa";
 import { FacebookProvider } from "./providers/facebook";
 import { GithubProvider } from "./providers/github";
 import { GitlabProvider } from "./providers/gitlab";
@@ -33,6 +34,7 @@ const _providers = {
   x: XProvider,
   twitch: TwitchProvider,
   okta: OktaProvider,
+  catapa: CatapaProvider,
 } as const;
 
 const mockProvider = MockProvider;

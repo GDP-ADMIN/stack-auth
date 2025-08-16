@@ -43,6 +43,7 @@ function toTitle(id: string) {
     twitch: "Twitch",
     x: "X",
     okta: "Okta",
+    catapa: "Catapa",
   }[id];
 }
 

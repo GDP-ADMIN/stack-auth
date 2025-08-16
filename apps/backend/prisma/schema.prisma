@@ -363,6 +363,7 @@ enum StandardOAuthProviderType {
   APPLE
   X
   TWITCH
+  CATAPA
 }
 
 model OAuthToken {
