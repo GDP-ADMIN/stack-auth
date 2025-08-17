@@ -15,6 +15,15 @@ type CatapaUserInfo = {
   },
 };
 
+type CatapaEmployeeDetail = {
+  id: string,
+  employee: {
+    photo?: {
+      url: string,
+    },
+  },
+}
+
 function getCatapaApiUrl(): string {
   return getEnvVariable("STACK_CATAPA_API_URL") || "https://api-apps.catapa.com";
 }
@@ -184,8 +193,7 @@ export class CatapaProvider extends OAuthBaseProvider {
     if (!employeeId) return null;
 
     const tenant = this.getTenantFromAccessToken(accessToken);
-    const search = new URLSearchParams({ query: `identificationNumberIn:${employeeId}` });
-    const url = `${getCatapaApiUrl()}/core/v1/employees?${search.toString()}`;
+    const url = `${getCatapaApiUrl()}/core/v1/employees/${employeeId}/employee-details`;
 
     const listRes = await fetch(url, {
       headers: {
@@ -195,9 +203,8 @@ export class CatapaProvider extends OAuthBaseProvider {
     });
     if (!listRes.ok) return null;
 
-    const listJson: any = await listRes.json();
-    const employee = Array.isArray(listJson?.content) ? listJson.content[0] : null;
-    return employee?.photo?.url;
+    const employeeDetail = await listRes.json() as CatapaEmployeeDetail;
+    return employeeDetail.employee.photo?.url ?? null;
   }
 
   private async convertPhotoUrlToBase64(photoUrl: string): Promise<string | null> {
