@@ -1,5 +1,7 @@
+import { KnownErrors } from "@stackframe/stack-shared";
 import { getEnvVariable } from "@stackframe/stack-shared/dist/utils/env";
-import { StackAssertionError } from "@stackframe/stack-shared/dist/utils/errors";
+import { StackAssertionError, StatusError, captureError } from "@stackframe/stack-shared/dist/utils/errors";
+import { CallbackParamsType, TokenSet as OIDCTokenSet } from "openid-client";
 import { OAuthUserInfo, validateUserInfo } from "../utils";
 import { OAuthBaseProvider, TokenSet } from "./base";
 
@@ -18,8 +20,13 @@ function getCatapaApiUrl(): string {
 }
 
 /**
+ * CATAPA OAuth provider.
+ *
  * CATAPA uses a tenant header/query/body param to identify the tenant.
- * The super.getAccessToken method won't work correctly because it doesn't know the tenant.
+ *
+ * We override getCallback to pass the tenant to the token endpoint.
+ *
+ * But the super.getAccessToken method won't work correctly because it doesn't know the tenant.
  * Currently we can't infer the tenant from the refresh token.
  * However, for the login use case, it seems that super.getAccessToken method is not used.
  */
@@ -47,6 +54,63 @@ export class CatapaProvider extends OAuthBaseProvider {
     }));
   }
 
+  /**
+   * CATAPA OAuth callback.
+   *
+   * Reimplementation of the base getCallback method with additional tenant body param.
+   * The tenant is inferred from the callback params.
+   */
+  async getCallback(options: {
+    callbackParams: CallbackParamsType,
+    codeVerifier: string,
+    state: string,
+  }): Promise<{ userInfo: OAuthUserInfo, tokenSet: TokenSet }> {
+    let tokenSet;
+    const params = [
+      this.redirectUri,
+      options.callbackParams,
+      {
+        code_verifier: this.noPKCE ? undefined : options.codeVerifier,
+        state: options.state,
+      },
+      {
+        exchangeBody: {
+          tenant: options.callbackParams.tenant,
+        },
+      }
+    ] as const;
+    try {
+      tokenSet = await this.oauthClient.oauthCallback(...params);
+    } catch (error: any) {
+      if (error?.error === "invalid_grant" || error?.error?.error === "invalid_grant") {
+        captureError("inner-oauth-callback", { error, params });
+        throw new StatusError(400, "Inner OAuth callback failed due to invalid grant. Please try again.");
+      }
+      if (error?.error === 'access_denied' || error?.error === 'consent_required') {
+        throw new KnownErrors.OAuthProviderAccessDenied();
+      }
+      if (error?.error === 'invalid_client') {
+        throw new StatusError(400, `Invalid client credentials for this OAuth provider. Please ensure the configuration in the Stack Auth dashboard is correct.`);
+      }
+      if (error?.error === 'unauthorized_scope_error') {
+        const scopeMatch = error?.error_description?.match(/Scope &quot;([^&]+)&quot; is not authorized for your application/);
+        const missingScope = scopeMatch ? scopeMatch[1] : null;
+        throw new StatusError(400, `The OAuth provider does not allow the requested scope${missingScope ? ` "${missingScope}"` : ""}. Please ensure the scope is configured correctly in the provider's dashboard.`);
+      }
+      throw new StackAssertionError(`Inner OAuth callback failed due to error: ${error}`, { params, cause: error });
+    }
+
+    if ('error' in tokenSet) {
+      throw new StackAssertionError(`Inner OAuth callback failed due to error: ${tokenSet.error}, ${tokenSet.error_description}`, { params, tokenSet });
+    }
+    tokenSet = this.processTokenSet(this.constructor.name, tokenSet);
+
+    return {
+      userInfo: await this.postProcessUserInfo(tokenSet),
+      tokenSet,
+    };
+  }
+
   async checkAccessTokenValidity(accessToken: string): Promise<boolean> {
     try {
       const userInfo = await this.getUserInfo(accessToken);
@@ -66,11 +130,26 @@ export class CatapaProvider extends OAuthBaseProvider {
       displayName: userInfo.employee?.name ?? userInfo.username,
       email: userInfo.email,
       profileImageUrl: employeeId ? await this.getProfileImageUrl(employeeId, tokenSet.accessToken) : null,
-      // In CATAPA, same email can be used in multiple tenants.
-      // We deliberately don't verify the email here so that stackauth does not use it as identifier.
-      // So we rely only on the accountId to identify the user.
-      emailVerified: false,
+      emailVerified: true,
     });
+  }
+
+  private processTokenSet(providerName: string, tokenSet: OIDCTokenSet): TokenSet {
+    if (!tokenSet.access_token) {
+      throw new StackAssertionError(`No access token received from ${providerName}.`, { tokenSetKeys: Object.keys(tokenSet), providerName });
+    }
+
+    if (!tokenSet.expires_in) {
+      captureError("processTokenSet", new StackAssertionError(`No expires_in received from OAuth provider ${providerName}. Falling back to 1h`, { tokenSetKeys: Object.keys(tokenSet) }));
+    }
+
+    return {
+      accessToken: tokenSet.access_token,
+      refreshToken: tokenSet.refresh_token,
+      accessTokenExpiredAt: tokenSet.expires_in ?
+        new Date(Date.now() + tokenSet.expires_in * 1000) :
+        new Date(Date.now() + 3600 * 1000), // 1h
+    };
   }
 
   private async getUserInfo(accessToken: string): Promise<CatapaUserInfo> {
