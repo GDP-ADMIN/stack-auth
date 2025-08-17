@@ -133,13 +133,14 @@ export class CatapaProvider extends OAuthBaseProvider {
     const tenant = this.getTenantFromAccessToken(tokenSet.accessToken);
     const userInfo = await this.getUserInfo(tokenSet.accessToken);
     const employeeId = userInfo.employee?.id;
+    const email = userInfo.email;
 
     return validateUserInfo({
       accountId: `${userInfo.username}@${tenant}:catapa`,
       displayName: userInfo.employee?.name ?? userInfo.username,
-      email: userInfo.email,
+      email,
       profileImageUrl: employeeId ? await this.getProfileImageUrl(employeeId, tokenSet.accessToken) : null,
-      emailVerified: true,
+      emailVerified: !!email,
     });
   }
 
