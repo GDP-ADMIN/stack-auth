@@ -226,6 +226,9 @@ export class CatapaProvider extends OAuthBaseProvider {
 
   /**
    * Get the tenant from the access token JWT payload.
+   *
+   * Currently only access token has tenant in the payload.
+   * Refresh token does not have tenant in the payload.
    */
   private getTenantFromAccessToken(accessToken: string): string | null {
     try {
