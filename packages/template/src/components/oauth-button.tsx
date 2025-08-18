@@ -165,6 +165,16 @@ export function OAuthButton({
       };
       break;
     }
+    case 'catapa': {
+      style = {
+        backgroundColor: "#fff",
+        textColor: "#000",
+        name: "Catapa",
+        border: '1px solid #ddd',
+        icon: <BrandIcons.Catapa iconSize={iconSize} />,
+      };
+      break;
+    }
     default: {
       style = {
         name: provider,
