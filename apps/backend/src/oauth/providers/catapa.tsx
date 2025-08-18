@@ -133,7 +133,11 @@ export class CatapaProvider extends OAuthBaseProvider {
     const tenant = this.getTenantFromAccessToken(tokenSet.accessToken);
     const userInfo = await this.getUserInfo(tokenSet.accessToken);
     const employeeId = userInfo.employee?.id;
-    const email = userInfo.email;
+
+    // Currently GLChat does not support multiple users with the same email,
+    // so we don't set the email yet and let users be identified by only their accountId.
+    // We can get the email from userInfo.email once GLChat supports it.
+    const email = null;
 
     return validateUserInfo({
       accountId: `${userInfo.username}@${tenant}:catapa`,
