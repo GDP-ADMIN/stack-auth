@@ -132,18 +132,28 @@ export class CatapaProvider extends OAuthBaseProvider {
   async postProcessUserInfo(tokenSet: TokenSet): Promise<OAuthUserInfo> {
     const tenant = this.getTenantFromAccessToken(tokenSet.accessToken);
     const userInfo = await this.getUserInfo(tokenSet.accessToken);
-    const employeeId = userInfo.employee?.id;
 
     // Currently GLChat does not support multiple users with the same email,
     // so we don't set the email yet and let users be identified by only their accountId.
     // We can get the email from userInfo.email once GLChat supports it.
     const email = null;
 
+    // CATAPA is still considering whether to store profile images due to privacy concerns.
+    //
+    // CATAPA provides profile images as presigned URLs with expiration.
+    // To store a profile image permanently, we would need to download it and return it as a base64 URL.
+    // When StackAuth receives a base64 image URL, it stores it in S3-compatible storage.
+    // The stored image becomes publicly accessible via a random UUID URL.
+    //
+    // For now, we don't store profile images pending further decision.
+    // We can use this.getProfileImageUrl() to get the profile image URL later if needed.
+    const profileImageUrl = null;
+
     return validateUserInfo({
       accountId: `${userInfo.username}@${tenant}:catapa`,
       displayName: userInfo.employee?.name ?? userInfo.username,
       email,
-      profileImageUrl: employeeId ? await this.getProfileImageUrl(employeeId, tokenSet.accessToken) : null,
+      profileImageUrl,
       emailVerified: !!email,
     });
   }
