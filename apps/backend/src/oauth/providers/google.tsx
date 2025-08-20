@@ -21,7 +21,7 @@ export class GoogleProvider extends OAuthBaseProvider {
       redirectUri: getEnvVariable("NEXT_PUBLIC_STACK_API_URL") + "/api/v1/auth/oauth/callback/google",
       openid: true,
       jwksUri: "https://www.googleapis.com/oauth2/v3/certs",
-      baseScope: "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile",
+      baseScope: "openid email profile",
       authorizationExtraParams: {
         prompt: "consent",
         include_granted_scopes: "true",
