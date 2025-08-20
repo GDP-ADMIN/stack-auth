@@ -25,7 +25,7 @@ type CatapaEmployeeDetail = {
 }
 
 function getCatapaApiUrl(): string {
-  return getEnvVariable("STACK_CATAPA_API_URL") || "https://api-apps.catapa.com";
+  return getEnvVariable("STACK_CATAPA_API_URL", "https://api-apps.catapa.com");
 }
 
 /**
@@ -52,8 +52,8 @@ export class CatapaProvider extends OAuthBaseProvider {
   }) {
     return new CatapaProvider(...await OAuthBaseProvider.createConstructorArgs({
       issuer: "https://catapa.com",
-      authorizationEndpoint: getEnvVariable("STACK_CATAPA_AUTHORIZATION_ENDPOINT") || "https://accounts-apps.catapa.com/oauth2/authorize",
-      tokenEndpoint: getEnvVariable("STACK_CATAPA_TOKEN_ENDPOINT") || "https://api-apps.catapa.com/oauth/token",
+      authorizationEndpoint: getEnvVariable("STACK_CATAPA_AUTHORIZATION_ENDPOINT", "https://accounts-apps.catapa.com/oauth2/authorize"),
+      tokenEndpoint: getEnvVariable("STACK_CATAPA_TOKEN_ENDPOINT", "https://api-apps.catapa.com/oauth/token"),
       userinfoEndpoint: `${getCatapaApiUrl()}/v1/users/me`,
       redirectUri: getEnvVariable("NEXT_PUBLIC_STACK_API_URL") + "/api/v1/auth/oauth/callback/catapa",
       baseScope: "all",
