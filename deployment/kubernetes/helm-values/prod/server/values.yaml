@@ -52,7 +52,7 @@ pvc:
 ingress:
   name: stackauth-server
   className: "alb"
-  groupname: alb-gdplabs-shared-kubernetes-private
+  groupname: alb-gdplabs-shared-kubernetes
   healthcheckpath: "/"
   serviceannotations:
     alb.ingress.kubernetes.io/tags: "Environment=production,Project=gen-ai,Organization=gdplabs,Owner=glx-sre@gdplabs.id,CreatedOn=05/08/2025"
