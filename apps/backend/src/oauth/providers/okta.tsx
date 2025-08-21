@@ -29,7 +29,6 @@ export class OktaProvider extends OAuthBaseProvider {
 
   async postProcessUserInfo(tokenSet: TokenSet): Promise<OAuthUserInfo> {
     const rawUserInfo = await this.oauthClient.userinfo(tokenSet.accessToken);
-
     return validateUserInfo({
       accountId: rawUserInfo.sub,
       displayName: rawUserInfo.name || rawUserInfo.preferred_username,
