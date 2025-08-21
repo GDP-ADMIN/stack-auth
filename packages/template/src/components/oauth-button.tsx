@@ -169,7 +169,7 @@ export function OAuthButton({
       style = {
         backgroundColor: "#fff",
         textColor: "#000",
-        name: "Catapa",
+        name: "CATAPA",
         border: '1px solid #ddd',
         icon: <BrandIcons.Catapa iconSize={iconSize} />,
       };
