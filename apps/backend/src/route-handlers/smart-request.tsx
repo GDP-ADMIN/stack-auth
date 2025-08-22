@@ -39,6 +39,7 @@ export type SmartRequest = {
   url: string,
   method: typeof allowedMethods[number],
   body: unknown,
+  bodyBuffer: ArrayBuffer,
   headers: Record<string, string[] | undefined>,
   query: Record<string, string | undefined>,
   params: Record<string, string | undefined>,
@@ -216,7 +217,7 @@ const parseAuth = withTraceSpan('smart request parseAuth', async (req: NextReque
       throw new StatusError(401, "The user associated with the admin access token is no longer valid. Please refresh the admin access token and try again.");
     }
 
-    const allProjects = listManagedProjectIds(user);
+    const allProjects = await listManagedProjectIds(user);
     if (!allProjects.includes(options.projectId)) {
       throw new KnownErrors.AdminAccessTokenIsNotAdmin();
     }
@@ -313,6 +314,7 @@ export async function createSmartRequest(req: NextRequest, bodyBuffer: ArrayBuff
       url: req.url,
       method: typedIncludes(allowedMethods, req.method) ? req.method : throwErr(new StatusError(405, "Method not allowed")),
       body: await parseBody(req, bodyBuffer),
+      bodyBuffer,
       headers: Object.fromEntries(
         [...groupBy(req.headers.entries(), ([key, _]) => key.toLowerCase())]
           .map(([key, values]) => [key, values.map(([_, value]) => value)]),
