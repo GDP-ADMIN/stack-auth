@@ -1,9 +1,10 @@
 "use client";
 import { InputField } from "@/components/form-fields";
 import { StyledLink } from "@/components/link";
+import { LogoUpload } from "@/components/logo-upload";
 import { FormSettingCard, SettingCard, SettingSwitch, SettingText } from "@/components/settings";
 import { getPublicEnvVar } from '@/lib/env';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, ActionDialog, Alert, Button, Typography } from "@stackframe/stack-ui";
+import { ActionDialog, Alert, Button, Typography } from "@stackframe/stack-ui";
 import * as yup from "yup";
 import { PageLayout } from "../page-layout";
 import { useAdminApp } from "../use-admin-app";
@@ -62,6 +63,32 @@ export default function PageClient() {
           </>
         )}
       />
+
+      <SettingCard title="Project Logo">
+        <LogoUpload
+          label="Logo"
+          value={project.logoUrl}
+          onValueChange={async (logoUrl) => {
+            await project.update({ logoUrl });
+          }}
+          description="Upload a logo for your project. Recommended size: 200x200px"
+          type="logo"
+        />
+
+        <LogoUpload
+          label="Full Logo"
+          value={project.fullLogoUrl}
+          onValueChange={async (fullLogoUrl) => {
+            await project.update({ fullLogoUrl });
+          }}
+          description="Upload a full logo with text. Recommended size: At least 100px tall, landscape format"
+          type="full-logo"
+        />
+
+        <Typography variant="secondary" type="footnote">
+          Logo images will be displayed in your application (e.g. login page) and emails. The logo should be a square image, while the full logo can include text and be wider.
+        </Typography>
+      </SettingCard>
 
       <SettingCard
         title="API Key Settings"
@@ -137,33 +164,48 @@ export default function PageClient() {
 
       <SettingCard
         title="Danger Zone"
-        description="Be careful with the options in this section. They can have irreversible effects."
+        description="Irreversible and destructive actions"
+        className="border-destructive"
       >
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="item-1">
-            <AccordionTrigger>Delete project</AccordionTrigger>
-            <AccordionContent>
-              <ActionDialog
-                trigger={<Button variant="destructive">Delete Project</Button>}
-                title="Delete domain"
-                danger
-                okButton={{
-                  label: "Delete Project",
-                  onClick: async () => {
-                    await project.delete();
-                    await stackAdminApp.redirectToHome();
-                  }
-                }}
-                cancelButton
-                confirmText="I understand this action is IRREVERSIBLE and will delete ALL associated data."
-              >
-                <Typography>
-                  {`Are you sure that you want to delete the project with name "${project.displayName}" and ID "${project.id}"? This action is irreversible and will delete all associated data (including users, teams, API keys, project configs, etc.).`}
-                </Typography>
-              </ActionDialog>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+        <div className="flex flex-col gap-4">
+          <div>
+            <Typography variant="secondary" className="mb-2">
+              Once you delete a project, there is no going back. All data will be permanently removed.
+            </Typography>
+            <ActionDialog
+              trigger={
+                <Button variant="destructive" size="sm">
+                  Delete Project
+                </Button>
+              }
+              title="Delete Project"
+              danger
+              okButton={{
+                label: "Delete Project",
+                onClick: async () => {
+                  await project.delete();
+                  await stackAdminApp.redirectToHome();
+                }
+              }}
+              cancelButton
+              confirmText="I understand this action is IRREVERSIBLE and will delete ALL associated data."
+            >
+              <Typography>
+                {`Are you sure that you want to delete the project with name "${project.displayName}" and ID "${project.id}"?`}
+              </Typography>
+              <Typography className="mt-2">
+                This action is <strong>irreversible</strong> and will permanently delete:
+              </Typography>
+              <ul className="mt-2 list-disc pl-5">
+                <li>All users and their data</li>
+                <li>All teams and team memberships</li>
+                <li>All API keys</li>
+                <li>All project configurations</li>
+                <li>All OAuth provider settings</li>
+              </ul>
+            </ActionDialog>
+          </div>
+        </div>
       </SettingCard>
     </PageLayout>
   );
