@@ -285,7 +285,7 @@ export function toTitle(id: string) {
     x: "X",
     twitch: "Twitch",
     okta: "Okta",
-    catapa: "Catapa"
+    catapa: "CATAPA"
   }[id] || throwErr(`Unknown provider: ${id}`);
 }
 
