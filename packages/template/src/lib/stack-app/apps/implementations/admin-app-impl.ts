@@ -18,13 +18,12 @@ import { StackAdminApp, StackAdminAppConstructorOptions } from "../interfaces/ad
 import { clientVersion, createCache, getBaseUrl, getDefaultProjectId, getDefaultPublishableClientKey, getDefaultSecretServerKey, getDefaultSuperSecretAdminKey } from "./common";
 import { _StackServerAppImplIncomplete } from "./server-app-impl";
 
-import { EnvironmentConfigOverrideOverride, OrganizationRenderedConfig } from "@stackframe/stack-shared/dist/config/schema";
+import { CompleteConfig, EnvironmentConfigOverrideOverride } from "@stackframe/stack-shared/dist/config/schema";
 import { ChatContent } from "@stackframe/stack-shared/dist/interface/admin-interface";
 import { ConfigCrud } from "@stackframe/stack-shared/dist/interface/crud/config";
 import { useAsyncCache } from "./common"; // THIS_LINE_PLATFORM react-like
 
-export class _StackAdminAppImplIncomplete<HasTokenStore extends boolean, ProjectId extends string> extends _StackServerAppImplIncomplete<HasTokenStore, ProjectId> implements StackAdminApp<HasTokenStore, ProjectId>
-{
+export class _StackAdminAppImplIncomplete<HasTokenStore extends boolean, ProjectId extends string> extends _StackServerAppImplIncomplete<HasTokenStore, ProjectId> implements StackAdminApp<HasTokenStore, ProjectId> {
   declare protected _interface: StackAdminInterface;
 
   private readonly _adminProjectCache = createCache(async () => {
@@ -87,7 +86,7 @@ export class _StackAdminAppImplIncomplete<HasTokenStore extends boolean, Project
     });
   }
 
-  _adminConfigFromCrud(data: ConfigCrud['Admin']['Read']): OrganizationRenderedConfig {
+  _adminConfigFromCrud(data: ConfigCrud['Admin']['Read']): CompleteConfig {
     return JSON.parse(data.config_string);
   }
 
@@ -113,6 +112,9 @@ export class _StackAdminAppImplIncomplete<HasTokenStore extends boolean, Project
       description: data.description,
       createdAt: new Date(data.created_at_millis),
       isProductionMode: data.is_production_mode,
+      ownerTeamId: data.owner_team_id,
+      logoUrl: data.logo_url,
+      fullLogoUrl: data.full_logo_url,
       config: {
         signUpEnabled: data.config.sign_up_enabled,
         credentialEnabled: data.config.credential_enabled,
@@ -168,6 +170,7 @@ export class _StackAdminAppImplIncomplete<HasTokenStore extends boolean, Project
       // END_PLATFORM
       async updateConfig(configOverride: EnvironmentConfigOverrideOverride) {
         await app._interface.updateConfig({ configOverride });
+        await app._configOverridesCache.refresh([]);
       },
       async update(update: AdminProjectUpdateOptions) {
         const updateOptions = adminProjectUpdateOptionsToCrud(update);
@@ -318,7 +321,7 @@ export class _StackAdminAppImplIncomplete<HasTokenStore extends boolean, Project
   }
 
 
-  async createTeamPermissionDefinition(data: AdminTeamPermissionDefinitionCreateOptions): Promise<AdminTeamPermission>{
+  async createTeamPermissionDefinition(data: AdminTeamPermissionDefinitionCreateOptions): Promise<AdminTeamPermission> {
     const crud = await this._interface.createTeamPermissionDefinition(adminTeamPermissionDefinitionCreateOptionsToCrud(data));
     await this._adminTeamPermissionDefinitionsCache.refresh([]);
     return this._serverTeamPermissionDefinitionFromCrud(crud);
@@ -498,4 +501,30 @@ export class _StackAdminAppImplIncomplete<HasTokenStore extends boolean, Project
     return { renderedHtml: result.rendered_html };
   }
 
+  async setupPayments(): Promise<{ url: string }> {
+    return await this._interface.setupPayments();
+  }
+
+  async createStripeWidgetAccountSession(): Promise<{ client_secret: string }> {
+    return await this._interface.createStripeWidgetAccountSession();
+  }
+
+  async createPurchaseUrl(options: { customerId: string, offerId: string }): Promise<string> {
+    return await this._interface.createPurchaseUrl({
+      customer_id: options.customerId,
+      offer_id: options.offerId,
+    });
+  }
+
+  async createItemQuantityChange(options: { customerId: string, itemId: string, quantity: number, expiresAt?: string, description?: string }): Promise<void> {
+    await this._interface.updateItemQuantity(
+      options.customerId,
+      options.itemId,
+      {
+        delta: options.quantity,
+        expires_at: options.expiresAt,
+        description: options.description,
+      }
+    );
+  }
 }
