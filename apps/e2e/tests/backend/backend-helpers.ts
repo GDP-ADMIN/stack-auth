@@ -414,9 +414,6 @@ export namespace Auth {
         headers: expect.anything(),
       });
 
-      // the verification email is sent asynchronously, so let's give it a tiny bit of time to arrive
-      await wait(200);
-
       backendContext.set({
         userAuth: {
           accessToken: response.body.access_token,
@@ -603,10 +600,7 @@ export namespace Auth {
           }),
         },
       });
-      expect(response).toMatchObject({
-        status: 307,
-        headers: expect.any(Headers),
-      });
+      expect(response.status).toBe(307);
       expect(response.headers.get("location")).toMatch(/^http:\/\/localhost:8114\/auth\?.*$/);
       expect(response.headers.get("set-cookie")).toMatch(/^stack-oauth-inner-[^;]+=[^;]+; Path=\/; Expires=[^;]+; Max-Age=\d+;( Secure;)? HttpOnly$/);
       return {
@@ -1030,13 +1024,11 @@ export namespace InternalApiKey {
 
 export namespace Project {
   export async function create(body?: any) {
-    const ownerTeamId = body?.owner_team_id ?? (await User.getCurrent()).selected_team_id;
     const response = await niceBackendFetch("/api/v1/internal/projects", {
       accessType: "client",
       method: "POST",
       body: {
         display_name: body?.display_name || 'New Project',
-        owner_team_id: ownerTeamId,
         ...body,
         config: {
           credential_enabled: true,
@@ -1112,16 +1104,6 @@ export namespace Project {
       userAuth: null
     });
     return createResult;
-  }
-
-  export async function updateConfig(config: any) {
-    const response = await niceBackendFetch(`/api/latest/internal/config/override`, {
-      accessType: "admin",
-      method: "PATCH",
-      body: { config_override_string: JSON.stringify(config) },
-    });
-    expect(response.body).toMatchInlineSnapshot(`{}`);
-    expect(response.status).toBe(200);
   }
 }
 
@@ -1241,7 +1223,7 @@ export namespace Team {
 }
 
 export namespace User {
-  export function setBackendContextFromUser({ mailbox, accessToken, refreshToken }: { mailbox: Mailbox, accessToken: string, refreshToken: string }) {
+  export function setBackendContextFromUser({ mailbox, accessToken, refreshToken }: {mailbox: Mailbox, accessToken: string, refreshToken: string}) {
     backendContext.set({
       mailbox,
       userAuth: {
@@ -1261,7 +1243,7 @@ export namespace User {
     return response.body;
   }
 
-  export async function create({ emailAddress }: { emailAddress?: string } = {}) {
+  export async function create({ emailAddress }: {emailAddress?: string} = {}) {
     // Create new mailbox
     const email = emailAddress ?? `unindexed-mailbox--${randomUUID()}${generatedEmailSuffix}`;
     const mailbox = createMailbox(email);
@@ -1297,7 +1279,7 @@ export namespace User {
     const users = [];
     for (let i = 0; i < count; i++) {
       const user = await User.create({});
-      users.push(user);
+        users.push(user);
     }
     return users;
   }
@@ -1387,51 +1369,5 @@ export namespace Webhook {
       });
     }
     return [];
-  }
-}
-
-export namespace Payments {
-  export async function createPurchaseUrlAndGetCode() {
-    await Project.createAndSwitch();
-    await Project.updateConfig({
-      payments: {
-        stripeAccountId: "acct_test123",
-        offers: {
-          "test-offer": {
-            displayName: "Test Offer",
-            customerType: "user",
-            serverOnly: false,
-            stackable: false,
-            prices: {
-              "monthly": {
-                USD: "1000",
-                interval: [1, "month"],
-              },
-            },
-            includedItems: {},
-          },
-        },
-      },
-    });
-
-    const { userId } = await User.create();
-    const response = await niceBackendFetch("/api/latest/payments/purchases/create-purchase-url", {
-      method: "POST",
-      accessType: "client",
-      body: {
-        customer_id: userId,
-        offer_id: "test-offer",
-      },
-    });
-    expect(response.status).toBe(200);
-    const body = response.body as { url: string };
-    expect(body.url).toMatch(/^https?:\/\/localhost:8101\/purchase\/[a-z0-9-_]+$/);
-    const codeMatch = body.url.match(/\/purchase\/([a-z0-9-_]+)/);
-    const code = codeMatch ? codeMatch[1] : undefined;
-    expect(code).toBeDefined();
-
-    return {
-      code,
-    };
   }
 }

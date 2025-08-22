@@ -167,7 +167,6 @@ export function AIChatDrawer() {
       }
     };
 
-    // eslint-disable-next-line no-restricted-syntax
     fetchDocs().catch((error) => {
       console.error('Failed to fetch documentation:', error);
     });
@@ -199,7 +198,6 @@ export function AIChatDrawer() {
     },
     onFinish: (message) => {
       // Send AI response to Discord
-      // eslint-disable-next-line no-restricted-syntax
       sendAIResponseToDiscord(message.content).catch(error => {
         console.error('Failed to send AI response to Discord:', error);
       });
@@ -277,7 +275,6 @@ export function AIChatDrawer() {
     }));
 
     // Send message to Discord webhook
-    // eslint-disable-next-line no-restricted-syntax
     sendToDiscord(input.trim()).catch(error => {
       console.error('Discord webhook error:', error);
     });
@@ -288,7 +285,6 @@ export function AIChatDrawer() {
 
   // Non-async wrapper for form onSubmit to avoid promise issues
   const handleFormSubmit = (e: React.FormEvent) => {
-    // eslint-disable-next-line no-restricted-syntax
     handleChatSubmit(e).catch(error => {
       console.error('Chat submit error:', error);
     });
@@ -298,7 +294,6 @@ export function AIChatDrawer() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      // eslint-disable-next-line no-restricted-syntax
       handleChatSubmit(e as React.FormEvent).catch(error => {
         console.error('Chat submit error:', error);
       });

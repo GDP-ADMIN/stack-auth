@@ -167,7 +167,6 @@ export function WebhooksAPIPage({ document, webhooks, description }: WebhooksAPI
             method={method.toUpperCase()}
             spec={spec}
             onCopy={(text: string) => {
-              // eslint-disable-next-line no-restricted-syntax
               copyToClipboard(text)
                 .catch(error => console.error('Failed to copy to clipboard:', error));
             }}
@@ -409,7 +408,6 @@ def handle_webhook():
       }
     };
 
-    // eslint-disable-next-line no-restricted-syntax
     updateHighlightedCode().catch(error => {
       console.error('Error updating highlighted code:', error);
     });
@@ -515,7 +513,6 @@ def handle_webhook():
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  // eslint-disable-next-line no-restricted-syntax
                   handleCopy(getCodeExample())
                     .catch(error => {
                       console.error('Failed to copy code example', error);

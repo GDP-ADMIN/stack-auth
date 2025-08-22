@@ -25,7 +25,6 @@ function OTP(props: {
   useEffect(() => {
     if (otp.length === 6 && !submitting) {
       setSubmitting(true);
-      // eslint-disable-next-line no-restricted-syntax
       stackApp.signInWithMagicLink(otp + props.nonce)
         .then(result => {
           if (result.status === 'error') {

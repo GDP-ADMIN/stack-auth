@@ -312,7 +312,6 @@ export function MessageFormatter({ content, className = '' }: MessageFormatterPr
       }
     };
 
-    // eslint-disable-next-line no-restricted-syntax
     parseContent().catch((error) => {
       console.error('Error parsing markdown:', error);
     });

@@ -62,17 +62,6 @@ const nextConfig = {
 
   poweredByHeader: false,
 
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '*.featurebase-attachments.com',
-        port: '',
-        pathname: '/**',
-      },
-    ],
-  },
-
   async rewrites() {
     return [
       {
@@ -89,7 +78,7 @@ const nextConfig = {
       },
     ];
   },
-  skipTrailingSlashRedirect: true,
+  skipTrailingSlashRedirect: true, 
 
   async headers() {
     return [
@@ -97,9 +86,8 @@ const nextConfig = {
         source: "/(.*)",
         headers: [
           {
-            // needed for stripe connect embedded components
             key: "Cross-Origin-Opener-Policy",
-            value: "same-origin-allow-popups",
+            value: "same-origin",
           },
           {
             key: "Permissions-Policy",

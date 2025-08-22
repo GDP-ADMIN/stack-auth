@@ -1,12 +1,12 @@
 'use client';
 
+import { FeedbackDialog } from "@/components/feedback-dialog";
 import { Link } from "@/components/link";
 import { Logo } from "@/components/logo";
 import { ProjectSwitcher } from "@/components/project-switcher";
-import { StackCompanion } from "@/components/stack-companion";
 import ThemeToggle from "@/components/theme-toggle";
 import { getPublicEnvVar } from '@/lib/env';
-import { cn, devFeaturesEnabledForProject } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { AdminProject, UserButton, useUser } from "@stackframe/stack";
 import {
   Breadcrumb,
@@ -14,7 +14,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-
+  Button,
   Sheet,
   SheetContent,
   SheetTitle,
@@ -24,7 +24,6 @@ import {
 } from "@stackframe/stack-ui";
 import {
   Book,
-  CreditCard,
   Globe,
   KeyRound,
   Link as LinkIcon,
@@ -51,7 +50,6 @@ type BreadcrumbItem = { item: React.ReactNode, href: string }
 type Label = {
   name: React.ReactNode,
   type: 'label',
-  requiresDevFeatureFlag?: boolean,
 };
 
 type Item = {
@@ -214,19 +212,6 @@ const navigationItems: (Label | Item | Hidden)[] = [
     type: 'hidden',
   },
   {
-    name: "Payments",
-    type: 'label',
-    requiresDevFeatureFlag: true,
-  },
-  {
-    name: "Payments",
-    href: "/payments",
-    regex: /^\/projects\/[^\/]+\/payments$/,
-    icon: CreditCard,
-    type: 'item',
-    requiresDevFeatureFlag: true,
-  },
-  {
     name: "Configuration",
     type: 'label'
   },
@@ -375,14 +360,14 @@ function SidebarContent({ projectId, onNavigate }: { projectId: string, onNaviga
       <div className="flex flex-grow flex-col gap-1 pt-2 overflow-y-auto">
         {navigationItems.map((item, index) => {
           if (item.type === 'label') {
-            if (item.requiresDevFeatureFlag && !devFeaturesEnabledForProject(projectId)) {
-              return null;
-            }
             return <Typography key={index} className="pl-2 mt-3" type="label" variant="secondary">
               {item.name}
             </Typography>;
           } else if (item.type === 'item') {
-            if (item.requiresDevFeatureFlag && !devFeaturesEnabledForProject(projectId)) {
+            if (
+              item.requiresDevFeatureFlag &&
+              !JSON.parse(getPublicEnvVar("NEXT_PUBLIC_STACK_ENABLE_DEVELOPMENT_FEATURES_PROJECT_IDS") || "[]").includes(projectId)
+            ) {
               return null;
             }
             return <div key={index} className="flex px-2">
@@ -507,19 +492,14 @@ function HeaderBreadcrumb({
 
 export default function SidebarLayout(props: { projectId: string, children?: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [companionExpanded, setCompanionExpanded] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
 
   return (
     <div className="w-full flex">
-      {/* Left Sidebar */}
       <div className="flex-col border-r min-w-[240px] h-screen sticky top-0 hidden md:flex backdrop-blur-md bg-white/20 dark:bg-black/20 z-[10]">
         <SidebarContent projectId={props.projectId} />
       </div>
-
-      {/* Main Content Area */}
       <div className="flex flex-col flex-grow w-0">
-        {/* Header */}
         <div className="h-14 border-b flex items-center justify-between sticky top-0 backdrop-blur-md bg-white/20 dark:bg-black/20 z-10 px-4 md:px-6">
           <div className="hidden md:flex">
             <HeaderBreadcrumb projectId={props.projectId} />
@@ -545,23 +525,19 @@ export default function SidebarLayout(props: { projectId: string, children?: Rea
             </div>
           </div>
 
-          <div className="flex gap-4 relative">
+          <div className="flex gap-4">
+            <FeedbackDialog
+              trigger={<Button variant="outline" size='sm'>Feedback</Button>}
+            />
             {getPublicEnvVar("NEXT_PUBLIC_STACK_EMULATOR_ENABLED") === "true" ?
               <ThemeToggle /> :
               <UserButton colorModeToggle={() => setTheme(resolvedTheme === 'light' ? 'dark' : 'light')} />
             }
           </div>
         </div>
-
-        {/* Content Body - Normal scrolling */}
         <div className="flex-grow relative">
           {props.children}
         </div>
-      </div>
-
-      {/* Stack Companion - Sticky positioned like left sidebar */}
-      <div className="h-screen sticky top-0 backdrop-blur-md bg-white/20 dark:bg-black/20 z-[10]">
-        <StackCompanion onExpandedChange={setCompanionExpanded} />
       </div>
     </div>
   );

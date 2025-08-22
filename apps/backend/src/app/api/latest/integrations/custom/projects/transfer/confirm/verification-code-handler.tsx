@@ -1,12 +1,9 @@
-import { addUserToTeam } from "@/app/api/latest/team-memberships/crud";
-import { teamsCrudHandlers } from "@/app/api/latest/teams/crud";
-import { DEFAULT_BRANCH_ID } from "@/lib/tenancies";
 import { getPrismaClientForTenancy, globalPrismaClient } from "@/prisma-client";
 import { createVerificationCodeHandler } from "@/route-handlers/verification-code-handler";
 import { VerificationCodeType } from "@prisma/client";
 import { KnownErrors } from "@stackframe/stack-shared";
 import { yupNumber, yupObject, yupString } from "@stackframe/stack-shared/dist/schema-fields";
-import { StackAssertionError, StatusError, throwErr } from "@stackframe/stack-shared/dist/utils/errors";
+import { StatusError, throwErr } from "@stackframe/stack-shared/dist/utils/errors";
 
 export const integrationProjectTransferCodeHandler = createVerificationCodeHandler({
   metadata: {
@@ -44,7 +41,7 @@ export const integrationProjectTransferCodeHandler = createVerificationCodeHandl
   },
 
   async handler(tenancy, method, data, body, user) {
-    if (tenancy.project.id !== "internal") throw new StackAssertionError("This endpoint is only available for internal projects, why is it being called for a non-internal project?");
+    const project = tenancy.project;
     if (!user) throw new KnownErrors.UserAuthenticationRequired;
 
     const provisionedProject = await globalPrismaClient.provisionedProject.deleteMany({
@@ -56,33 +53,33 @@ export const integrationProjectTransferCodeHandler = createVerificationCodeHandl
 
     if (provisionedProject.count === 0) throw new StatusError(400, "The project to transfer was not provisioned or has already been transferred.");
 
-    const project = await globalPrismaClient.project.findUnique({
-      where: {
-        id: data.project_id,
-      },
-    });
-    if (!project) throw new StatusError(400, "The project to transfer was not found.");
-    if (project.ownerTeamId) throw new StatusError(400, "The project to transfer has already been transferred.");
+    const prisma = await getPrismaClientForTenancy(tenancy);
 
-    const team = await teamsCrudHandlers.adminCreate({
-      data: {
-        display_name: user.display_name ?
-          `${user.display_name}'s Team` :
-          user.primary_email ?
-            `${user.primary_email}'s Team` :
-            "Personal Team",
-        creator_user_id: 'me',
-      },
-      tenancy,
-      user,
-    });
-
-    await globalPrismaClient.project.update({
+    const recentDbUser = await prisma.projectUser.findUnique({
       where: {
-        id: data.project_id,
+        tenancyId_projectUserId: {
+          tenancyId: tenancy.id,
+          projectUserId: user.id,
+        },
+      },
+    }) ?? throwErr("Authenticated user not found in transaction. Something went wrong. Did the user delete their account at the wrong time? (Very unlikely.)");
+    const rduServerMetadata: any = recentDbUser.serverMetadata;
+
+    await prisma.projectUser.update({
+      where: {
+        tenancyId_projectUserId: {
+          tenancyId: tenancy.id,
+          projectUserId: user.id,
+        },
       },
       data: {
-        ownerTeamId: team.id,
+        serverMetadata: {
+          ...typeof rduServerMetadata === "object" ? rduServerMetadata : {},
+          managedProjectIds: [
+            ...(Array.isArray(rduServerMetadata?.managedProjectIds) ? rduServerMetadata.managedProjectIds : []),
+            data.project_id,
+          ],
+        },
       },
     });
 

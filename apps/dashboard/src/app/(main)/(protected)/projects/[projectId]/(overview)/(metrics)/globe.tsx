@@ -6,15 +6,11 @@ import { Typography } from '@stackframe/stack-ui';
 import dynamic from 'next/dynamic';
 import { RefObject, use, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { GlobeMethods } from 'react-globe.gl';
-
-export const globeImages = {
-  light: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD5Ip3+AAAADUlEQVQIHWO48vjffwAI+QO1AqIWWgAAAABJRU5ErkJggg==',
-  dark: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD5Ip3+AAAADUlEQVQIHWPgF9f8DwAB1wFPLWQXmAAAAABJRU5ErkJggg=='
-};
+import { globeImages } from '../(utils)/utils';
 
 // https://github.com/vasturiano/react-globe.gl/issues/1#issuecomment-554459831
 const Globe = dynamic(() => import('react-globe.gl').then((mod) => mod.default), { ssr: false });
-const countriesPromise = import('./country-data.geo.json');
+const countriesPromise = import('../(utils)/country-data.geo.json');
 
 function useSize(target: RefObject<HTMLDivElement | null>) {
   const [size, setSize] = useState<DOMRectReadOnly>();
@@ -67,7 +63,7 @@ export function GlobeSection({ countryData, totalUsers, children }: {countryData
     resumeRenderIntervalRef.current = setTimeout(() => {
       globeRef.current?.pauseAnimation();  // conditional, because globe may have been destroyed
       resumeRenderIntervalRef.current = null;
-    }, 1000);
+    }, 200);
 
     // resume animation
     // we only resume if we haven't already resumed before to prevent a StackOverflow: resumeAnimation -> onZoom -> resumeRender -> resumeAnimation, etc etc
@@ -182,7 +178,7 @@ export function GlobeSection({ countryData, totalUsers, children }: {countryData
               }
               const controls = current.controls();
               controls.maxDistance = 1000;
-              controls.minDistance = 400;
+              controls.minDistance = 120;
               controls.dampingFactor = 0.2;
               // even though rendering is resumed by default, we want to pause it after 200ms, so call resumeRender()
               resumeRender();
@@ -237,12 +233,12 @@ export function GlobeSection({ countryData, totalUsers, children }: {countryData
               return color;
             }}
             onHexPolygonHover={(d: any) => {
-              resumeRender();
-              if (d) {
-                setHexSelectedCountry({ code: d.properties.ISO_A2_EH, name: d.properties.NAME });
-              } else {
-                setHexSelectedCountry(null);
-              }
+            resumeRender();
+            if (d) {
+              setHexSelectedCountry({ code: d.properties.ISO_A2_EH, name: d.properties.NAME });
+            } else {
+              setHexSelectedCountry(null);
+            }
             }}
 
             atmosphereColor='#CBD5E0'

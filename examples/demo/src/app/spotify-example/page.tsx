@@ -21,7 +21,6 @@ export default function Page() {
       setPlayList(data);
     }
 
-    // eslint-disable-next-line no-restricted-syntax
     getPlayList().catch((error) => {
       alert("An error occurred.");
       console.error(error);

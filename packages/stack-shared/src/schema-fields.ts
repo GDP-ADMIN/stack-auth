@@ -1,17 +1,15 @@
 import * as yup from "yup";
 import { KnownErrors } from ".";
 import { isBase64 } from "./utils/bytes";
-import { Currency, MoneyAmount, SUPPORTED_CURRENCIES } from "./utils/currencies";
+import { Currency, MoneyAmount } from "./utils/currencies";
 import { DayInterval, Interval } from "./utils/dates";
 import { StackAssertionError, throwErr } from "./utils/errors";
 import { decodeBasicAuthorizationHeader } from "./utils/http";
 import { allProviders } from "./utils/oauth";
-import { deepPlainClone, omit, typedFromEntries } from "./utils/objects";
+import { deepPlainClone, omit } from "./utils/objects";
 import { deindent } from "./utils/strings";
-import { isValidUrl, isValidHostnameWithWildcards } from "./utils/urls";
+import { isValidUrl } from "./utils/urls";
 import { isUuid } from "./utils/uuids";
-
-const MAX_IMAGE_SIZE_BASE64_BYTES = 1_000_000; // 1MB
 
 declare module "yup" {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
@@ -340,57 +338,6 @@ export const urlSchema = yupString().test({
   message: (params) => `${params.path} is not a valid URL`,
   test: (value) => value == null || isValidUrl(value)
 });
-/**
- * URL schema that supports wildcard patterns in hostnames (e.g., "https://*.example.com", "http://*:8080")
- */
-export const wildcardUrlSchema = yupString().test({
-  name: 'no-spaces',
-  message: (params) => `${params.path} contains spaces`,
-  test: (value) => value == null || !value.includes(' ')
-}).test({
-  name: 'wildcard-url',
-  message: (params) => `${params.path} is not a valid URL or wildcard URL pattern`,
-  test: (value) => {
-    if (value == null) return true;
-
-    // If it doesn't contain wildcards, use the regular URL validation
-    if (!value.includes('*')) {
-      return isValidUrl(value);
-    }
-
-    // For wildcard URLs, validate the structure by replacing wildcards with placeholders
-    try {
-      const PLACEHOLDER = 'wildcard-placeholder';
-      // Replace wildcards with valid placeholders for URL parsing
-      const normalizedUrl = value.replace(/\*/g, PLACEHOLDER);
-      const url = new URL(normalizedUrl);
-
-      // Only allow wildcards in the hostname; reject anywhere else
-      if (
-        url.username.includes(PLACEHOLDER) ||
-        url.password.includes(PLACEHOLDER) ||
-        url.pathname.includes(PLACEHOLDER) ||
-        url.search.includes(PLACEHOLDER) ||
-        url.hash.includes(PLACEHOLDER)
-      ) {
-        return false;
-      }
-
-      // Only http/https are acceptable
-      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-        return false;
-      }
-
-      // Extract original hostname pattern from the input
-      const hostPattern = url.hostname.split(PLACEHOLDER).join('*');
-
-      // Validate the wildcard hostname pattern using the existing function
-      return isValidHostnameWithWildcards(hostPattern);
-    } catch (e) {
-      return false;
-    }
-  }
-});
 export const jsonSchema = yupMixed().nullable().defined().transform((value) => JSON.parse(JSON.stringify(value)));
 export const jsonStringSchema = yupString().test("json", (params) => `${params.path} is not valid JSON`, (value) => {
   if (value == null) return true;
@@ -423,7 +370,7 @@ export const dayIntervalOrNeverSchema = yupUnion(dayIntervalSchema.defined(), yu
  * This schema is useful for fields where the user can specify the ID, such as price IDs. It is particularly common
  * for IDs in the config schema.
  */
-export const userSpecifiedIdSchema = (idName: `${string}Id`) => yupString().matches(/^[a-zA-Z_][a-zA-Z0-9_-]*$/, `${idName} must start with a letter or underscore and contain only letters, numbers, underscores, and hyphens`);
+export const userSpecifiedIdSchema = (idName: `${string}Id`) => yupString().matches(/^[a-zA-Z_][a-zA-Z0-9_-]*$/);
 export const moneyAmountSchema = (currency: Currency) => yupString<MoneyAmount>().test('money-amount', 'Invalid money amount', (value, context) => {
   if (value == null) return true;
   const regex = /^([0-9]+)(\.([0-9]+))?$/;
@@ -435,7 +382,6 @@ export const moneyAmountSchema = (currency: Currency) => yupString<MoneyAmount>(
   if (whole !== '0' && whole.startsWith('0')) return context.createError({ message: 'Money amount must not have leading zeros' });
   return true;
 });
-
 
 /**
  * A stricter email schema that does some additional checks for UX input. (Some emails are allowed by the spec, for
@@ -486,8 +432,6 @@ export const adminAuthTypeSchema = yupString().oneOf(['admin']).defined();
 export const projectIdSchema = yupString().test((v) => v === undefined || v === "internal" || isUuid(v)).meta({ openapiField: { description: _idDescription('project'), exampleValue: 'e0b52f4d-dece-408c-af49-d23061bb0f8d' } });
 export const projectBranchIdSchema = yupString().nonEmpty().max(255).meta({ openapiField: { description: _idDescription('project branch'), exampleValue: 'main' } });
 export const projectDisplayNameSchema = yupString().meta({ openapiField: { description: _displayNameDescription('project'), exampleValue: 'MyMusic' } });
-export const projectLogoUrlSchema = urlSchema.max(MAX_IMAGE_SIZE_BASE64_BYTES).meta({ openapiField: { description: 'URL of the logo for the project. This is usually a close to 1:1 image of the company logo.', exampleValue: 'https://example.com/logo.png' } });
-export const projectFullLogoUrlSchema = urlSchema.max(MAX_IMAGE_SIZE_BASE64_BYTES).meta({ openapiField: { description: 'URL of the full logo for the project. This is usually a vertical image with the logo and the company name.', exampleValue: 'https://example.com/full-logo.png' } });
 export const projectDescriptionSchema = yupString().nullable().meta({ openapiField: { description: 'A human readable description of the project', exampleValue: 'A music streaming service' } });
 export const projectCreatedAtMillisSchema = yupNumber().meta({ openapiField: { description: _createdAtMillisDescription('project'), exampleValue: 1630000000000 } });
 export const projectIsProductionModeSchema = yupBoolean().meta({ openapiField: { description: 'Whether the project is in production mode', exampleValue: true } });
@@ -545,61 +489,7 @@ export const emailTemplateListSchema = yupRecord(
 ).meta({ openapiField: { description: 'Record of email template IDs to their display name and source code' } });
 
 // Payments
-export const customerTypeSchema = yupString().oneOf(['user', 'team']);
-const validateHasAtLeastOneSupportedCurrency = (value: Record<string, unknown>, context: any) => {
-  const currencies = Object.keys(value).filter(key => SUPPORTED_CURRENCIES.some(c => c.code === key));
-  if (currencies.length === 0) {
-    return context.createError({ message: "At least one currency is required" });
-  }
-  return true;
-};
-export const offerPriceSchema = yupObject({
-  ...typedFromEntries(SUPPORTED_CURRENCIES.map(currency => [currency.code, moneyAmountSchema(currency).optional()])),
-  interval: dayIntervalSchema.optional(),
-  serverOnly: yupBoolean(),
-  freeTrial: dayIntervalSchema.optional(),
-}).test("at-least-one-currency", (value, context) => validateHasAtLeastOneSupportedCurrency(value, context));
-export const offerSchema = yupObject({
-  displayName: yupString(),
-  customerType: customerTypeSchema,
-  freeTrial: dayIntervalSchema.optional(),
-  serverOnly: yupBoolean(),
-  stackable: yupBoolean(),
-  prices: yupRecord(
-    userSpecifiedIdSchema("priceId"),
-    offerPriceSchema,
-  ),
-  includedItems: yupRecord(
-    userSpecifiedIdSchema("itemId"),
-    yupObject({
-      quantity: yupNumber(),
-      repeat: dayIntervalOrNeverSchema.optional(),
-      expires: yupString().oneOf(['never', 'when-purchase-expires', 'when-repeated']).optional(),
-    }),
-  ),
-});
-export const inlineOfferSchema = yupObject({
-  display_name: yupString().defined(),
-  customer_type: customerTypeSchema.defined(),
-  free_trial: dayIntervalSchema.optional(),
-  server_only: yupBoolean().oneOf([true]).default(true),
-  prices: yupRecord(
-    userSpecifiedIdSchema("priceId"),
-    yupObject({
-      ...typedFromEntries(SUPPORTED_CURRENCIES.map(currency => [currency.code, moneyAmountSchema(currency).optional()])),
-      interval: dayIntervalSchema.optional(),
-      free_trial: dayIntervalSchema.optional(),
-    }).test("at-least-one-currency", (value, context) => validateHasAtLeastOneSupportedCurrency(value, context)),
-  ),
-  included_items: yupRecord(
-    userSpecifiedIdSchema("itemId"),
-    yupObject({
-      quantity: yupNumber(),
-      repeat: dayIntervalOrNeverSchema.optional(),
-      expires: yupString().oneOf(['never', 'when-purchase-expires', 'when-repeated']).optional(),
-    }),
-  ),
-});
+export const customerTypeSchema = yupString().oneOf(['user', 'team', 'organization']);
 
 // Users
 export class ReplaceFieldWithOwnUserId extends Error {
@@ -623,7 +513,7 @@ export const primaryEmailAuthEnabledSchema = yupBoolean().meta({ openapiField: {
 export const primaryEmailVerifiedSchema = yupBoolean().meta({ openapiField: { description: 'Whether the primary email has been verified to belong to this user', exampleValue: true } });
 export const userDisplayNameSchema = yupString().nullable().meta({ openapiField: { description: _displayNameDescription('user'), exampleValue: 'John Doe' } });
 export const selectedTeamIdSchema = yupString().uuid().meta({ openapiField: { description: 'ID of the team currently selected by the user', exampleValue: 'team-id' } });
-export const profileImageUrlSchema = urlSchema.max(MAX_IMAGE_SIZE_BASE64_BYTES).meta({ openapiField: { description: _profileImageUrlDescription('user'), exampleValue: 'https://example.com/image.jpg' } });
+export const profileImageUrlSchema = urlSchema.max(1000000).meta({ openapiField: { description: _profileImageUrlDescription('user'), exampleValue: 'https://example.com/image.jpg' } });
 export const signedUpAtMillisSchema = yupNumber().meta({ openapiField: { description: _signedUpAtMillisDescription, exampleValue: 1630000000000 } });
 export const userClientMetadataSchema = jsonSchema.meta({ openapiField: { description: _clientMetaDataDescription('user'), exampleValue: { key: 'value' } } });
 export const userClientReadOnlyMetadataSchema = jsonSchema.meta({ openapiField: { description: _clientReadOnlyMetaDataDescription('user'), exampleValue: { key: 'value' } } });

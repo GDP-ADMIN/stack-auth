@@ -1,7 +1,7 @@
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from "@prisma/client";
-import { CompleteConfig } from "@stackframe/stack-shared/dist/config/schema";
+import { OrganizationRenderedConfig } from "@stackframe/stack-shared/dist/config/schema";
 import { getEnvVariable, getNodeEnvironment } from '@stackframe/stack-shared/dist/utils/env';
 import { StackAssertionError } from "@stackframe/stack-shared/dist/utils/errors";
 import { globalVar } from "@stackframe/stack-shared/dist/utils/globals";
@@ -35,8 +35,7 @@ export const globalPrismaSchema = dbString === "" ? "public" : getSchemaFromConn
 function getNeonPrismaClient(connectionString: string) {
   let neonPrismaClient = prismaClientsStore.neon.get(connectionString);
   if (!neonPrismaClient) {
-    const schema = getSchemaFromConnectionString(connectionString);
-    const adapter = new PrismaNeon({ connectionString }, { schema });
+    const adapter = new PrismaNeon({ connectionString });
     neonPrismaClient = new PrismaClient({ adapter });
     prismaClientsStore.neon.set(connectionString, neonPrismaClient);
   }
@@ -70,7 +69,7 @@ function getPostgresPrismaClient(connectionString: string) {
   return postgresPrismaClient;
 }
 
-export async function getPrismaClientForSourceOfTruth(sourceOfTruth: CompleteConfig["sourceOfTruth"], branchId: string) {
+export async function getPrismaClientForSourceOfTruth(sourceOfTruth: OrganizationRenderedConfig["sourceOfTruth"], branchId: string) {
   switch (sourceOfTruth.type) {
     case 'neon': {
       if (!(branchId in sourceOfTruth.connectionStrings)) {
@@ -92,7 +91,7 @@ export async function getPrismaClientForSourceOfTruth(sourceOfTruth: CompleteCon
   }
 }
 
-export function getPrismaSchemaForSourceOfTruth(sourceOfTruth: CompleteConfig["sourceOfTruth"], branchId: string) {
+export function getPrismaSchemaForSourceOfTruth(sourceOfTruth: OrganizationRenderedConfig["sourceOfTruth"], branchId: string) {
   switch (sourceOfTruth.type) {
     case 'postgres': {
       return getSchemaFromConnectionString(sourceOfTruth.connectionString);

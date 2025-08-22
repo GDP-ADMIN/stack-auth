@@ -21,9 +21,7 @@ export function getProductionModeErrors(project: ProjectsCrud["Admin"]["Read"]):
   for (const { domain } of project.config.domains) {
     let url;
     try {
-      // For wildcard domains, replace wildcards with a valid placeholder to validate the URL structure
-      const normalizedDomain = domain.replace(/\*+/g, 'wildcard-placeholder');
-      url = new URL(normalizedDomain);
+      url = new URL(domain);
     } catch (e) {
       captureError("production-mode-domain-not-valid", new StackAssertionError("Domain was somehow not a valid URL; we should've caught this when setting the domain in the first place", {
         domain,
