@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax */
 import { usersCrudHandlers } from '@/app/api/latest/users/crud';
 import { overrideEnvironmentConfigOverride } from '@/lib/config';
-import { grantTeamPermission, updatePermissionDefinition } from '@/lib/permissions';
+import { updatePermissionDefinition } from '@/lib/permissions';
 import { createOrUpdateProjectWithLegacyConfig, getProject } from '@/lib/projects';
 import { DEFAULT_BRANCH_ID, getSoleTenancyFromProjectBranch } from '@/lib/tenancies';
 import { getPrismaClientForTenancy, globalPrismaClient } from '@/prisma-client';
@@ -311,12 +311,13 @@ async function seed() {
       }
     }
 
-    await grantTeamPermission(internalPrisma, {
-      tenancy: internalTenancy,
-      teamId: internalTeamId,
-      userId: defaultUserId,
-      permissionId: "team_admin",
-    });
+    // TODO: uncomment this when there is a fix from the upstream
+    // await grantTeamPermission(internalPrisma, {
+    //   tenancy: internalTenancy,
+    //   teamId: internalTeamId,
+    //   userId: defaultUserId,
+    //   permissionId: "team_admin",
+    // });
   }
 
   if (emulatorEnabled) {
