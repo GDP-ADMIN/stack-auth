@@ -3,16 +3,8 @@
 import { useThemeWatcher } from '@/lib/theme';
 import { CopyButton } from "@stackframe/stack-ui";
 import { Code, Terminal } from "lucide-react";
-import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
-import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
-import python from 'react-syntax-highlighter/dist/esm/languages/prism/python';
-import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
-import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { dark, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
-
-Object.entries({ tsx, bash, typescript, python }).forEach(([key, value]) => {
-  SyntaxHighlighter.registerLanguage(key, value);
-});
 
 export function CodeBlock(props: {
   language: string,

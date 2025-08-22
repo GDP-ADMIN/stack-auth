@@ -41,7 +41,6 @@ export function DynamicCodeblock({ code, language = 'tsx', title }: DynamicCodeb
       }
     };
 
-    // eslint-disable-next-line no-restricted-syntax
     updateHighlightedCode().catch(error => {
       console.error('Error updating highlighted code:', error);
     });

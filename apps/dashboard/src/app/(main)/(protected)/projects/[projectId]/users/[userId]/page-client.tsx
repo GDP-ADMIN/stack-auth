@@ -572,7 +572,7 @@ function SendEmailWithDomainDialog({
           baseUrl = domain.domain;
           handlerPath = domain.handlerPath;
         }
-        const callbackUrl = new URL(handlerPath.replace(/\/?$/, '/') + endpointPath.replace(/^\//, ''), baseUrl).toString();
+        const callbackUrl = new URL(handlerPath + endpointPath, baseUrl).toString();
         await onSubmit(callbackUrl);
       }}
     />

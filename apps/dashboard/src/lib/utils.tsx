@@ -15,14 +15,3 @@ export function redirectToProjectIfEmulator() {
     redirect(`/projects/${projectId}`);
   }
 }
-
-export function devFeaturesEnabledForProject(projectId: string) {
-  if (projectId === "internal") {
-    return true;
-  }
-  const allowedProjectIds = JSON.parse(getPublicEnvVar("NEXT_PUBLIC_STACK_ENABLE_DEVELOPMENT_FEATURES_PROJECT_IDS") || "[]");
-  if (allowedProjectIds.status !== "ok" || !Array.isArray(allowedProjectIds.data)) {
-    return false;
-  }
-  return allowedProjectIds.data.includes(projectId);
-}
