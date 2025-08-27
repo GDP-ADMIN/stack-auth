@@ -29,7 +29,7 @@ function getCatapaApiUrl(): string {
 }
 
 function getTenantIdentifier(tenant: string | null): string {
-  return slugifyLower(`${tenant}-catapa`);
+  return slugifyLower(`${tenant ?? "null"}-catapa`);
 }
 
 /**
