@@ -28,6 +28,30 @@ function getCatapaApiUrl(): string {
   return getEnvVariable("STACK_CATAPA_API_URL", "https://api-apps.catapa.com");
 }
 
+function getTenantIdentifier(tenant: string | null): string {
+  return slugifyLower(`${tenant ?? "null"}-catapa`);
+}
+
+/**
+ * Convert arbitrary text into a URL-safe, lowercase slug.
+ *
+ * - Lowercases the input and NFKD-normalizes it
+ * - Removes diacritics (e.g., ä → a)
+ * - Replaces any non [a-z0-9] run with a single hyphen
+ * - Trims leading/trailing hyphens and collapses repeats
+ *
+ * Example: "Ácme Ltd! — HR_Team" → "acme-ltd-hr-team"
+ */
+function slugifyLower(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-');
+}
+
 /**
  * CATAPA OAuth provider.
  *
@@ -150,7 +174,7 @@ export class CatapaProvider extends OAuthBaseProvider {
     const profileImageUrl = null;
 
     return validateUserInfo({
-      accountId: `${userInfo.username}@${tenant}:catapa`,
+      accountId: `${userInfo.username}@${getTenantIdentifier(tenant)}`,
       displayName: userInfo.employee?.name ?? userInfo.username,
       email,
       profileImageUrl,
