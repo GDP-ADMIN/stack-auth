@@ -8,7 +8,7 @@ import { StackAssertionError, throwErr } from "@stackframe/stack-shared/dist/uti
 import { pick } from "@stackframe/stack-shared/dist/utils/objects";
 import { Result } from "@stackframe/stack-shared/dist/utils/results";
 import { useMemo } from "react"; // THIS_LINE_PLATFORM react-like
-import { AdminSentEmail } from "../..";
+import { AdminSentEmail, CurrentUser } from "../..";
 import { EmailConfig, stackAppInternalsSymbol } from "../../common";
 import { AdminEmailTemplate } from "../../email-templates";
 import { InternalApiKey, InternalApiKeyBase, InternalApiKeyBaseCrudRead, InternalApiKeyCreateOptions, InternalApiKeyFirstView, internalApiKeyCreateOptionsToCrud } from "../../internal-api-keys";
@@ -59,6 +59,16 @@ export class _StackAdminAppImplIncomplete<HasTokenStore extends boolean, Project
   });
   private readonly _configOverridesCache = createCache(async () => {
     return await this._interface.getConfig();
+  });
+  private readonly _stripeAccountInfoCache = createCache(async () => {
+    try {
+      return await this._interface.getStripeAccountInfo();
+    } catch (error: any) {
+      if (error?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   });
 
   constructor(options: StackAdminAppConstructorOptions<HasTokenStore, ProjectId>) {
@@ -179,6 +189,10 @@ export class _StackAdminAppImplIncomplete<HasTokenStore extends boolean, Project
       },
       async delete() {
         await app._interface.deleteProject();
+      },
+      async transfer(user: CurrentUser, newTeamId: string) {
+        await app._interface.transferProject(user._internalSession, newTeamId);
+        await onRefresh();
       },
       async getProductionModeErrors() {
         return getProductionModeErrors(data);
@@ -509,17 +523,13 @@ export class _StackAdminAppImplIncomplete<HasTokenStore extends boolean, Project
     return await this._interface.createStripeWidgetAccountSession();
   }
 
-  async createPurchaseUrl(options: { customerId: string, offerId: string }): Promise<string> {
-    return await this._interface.createPurchaseUrl({
-      customer_id: options.customerId,
-      offer_id: options.offerId,
-    });
-  }
-
-  async createItemQuantityChange(options: { customerId: string, itemId: string, quantity: number, expiresAt?: string, description?: string }): Promise<void> {
+  async createItemQuantityChange(options: (
+    { userId: string, itemId: string, quantity: number, expiresAt?: string, description?: string } |
+    { teamId: string, itemId: string, quantity: number, expiresAt?: string, description?: string } |
+    { customCustomerId: string, itemId: string, quantity: number, expiresAt?: string, description?: string }
+  )): Promise<void> {
     await this._interface.updateItemQuantity(
-      options.customerId,
-      options.itemId,
+      { itemId: options.itemId, ...("userId" in options ? { userId: options.userId } : ("teamId" in options ? { teamId: options.teamId } : { customCustomerId: options.customCustomerId })) },
       {
         delta: options.quantity,
         expires_at: options.expiresAt,
@@ -527,4 +537,19 @@ export class _StackAdminAppImplIncomplete<HasTokenStore extends boolean, Project
       }
     );
   }
+
+  async testModePurchase(options: { priceId: string, fullCode: string, quantity?: number }): Promise<void> {
+    await this._interface.testModePurchase({ price_id: options.priceId, full_code: options.fullCode, quantity: options.quantity });
+  }
+
+  async getStripeAccountInfo(): Promise<null | { account_id: string, charges_enabled: boolean, details_submitted: boolean, payouts_enabled: boolean }> {
+    return await this._interface.getStripeAccountInfo();
+  }
+
+  // IF_PLATFORM react-like
+  useStripeAccountInfo(): { account_id: string, charges_enabled: boolean, details_submitted: boolean, payouts_enabled: boolean } | null {
+    const data = useAsyncCache(this._stripeAccountInfoCache, [], "useStripeAccountInfo()");
+    return data;
+  }
+  // END_PLATFORM
 }
