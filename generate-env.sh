@@ -20,6 +20,11 @@ gen_uuid() {
   fi
 }
 
+gen_base64url_key() {
+  # Generate 32 random bytes and encode as base64url (like jose.base64url.encode)
+  head -c 32 /dev/urandom | base64 | tr '/+' '_-' | tr -d '='
+}
+
 # ========= Generate Values =========
 ADMIN_EMAIL="admin@gdplabs.id"
 ADMIN_PASSWORD=$(gen_password)
@@ -36,6 +41,8 @@ SECRET_SERVER_KEY=$(gen_key "sk")
 PUBLISHABLE_CLIENT_KEY=$(gen_key "pck")
 SUPER_SECRET_ADMIN_KEY=$(gen_key "sak")
 
+STACK_SERVER_SECRET=$(gen_base64url_key)
+
 BASE_URL="https://stag-api-stackauth-gdplabs-gen-ai-starter.obrol.id"
 TRUSTED_DOMAINS="https://chat.gdplabs.id"
 
@@ -48,6 +55,8 @@ STACK_SEED_INTERNAL_PROJECT_USER_PASSWORD: "$ADMIN_PASSWORD"
 STACK_SEED_INTERNAL_PROJECT_PUBLISHABLE_CLIENT_KEY: "$INTERNAL_PUBLISHABLE_CLIENT_KEY"
 STACK_SEED_INTERNAL_PROJECT_SECRET_SERVER_KEY: "$INTERNAL_SECRET_SERVER_KEY"
 STACK_SEED_INTERNAL_PROJECT_SUPER_SECRET_ADMIN_KEY: "$INTERNAL_SUPER_SECRET_ADMIN_KEY"
+
+STACK_SERVER_SECRET: "$STACK_SERVER_SECRET"
 
 # Optional: If you want to use Google OAuth, uncomment the following lines or setup in the dashboard
 # STACK_GOOGLE_CLIENT_ID: "your-google-client-id"
