@@ -12,25 +12,17 @@ source /root/shared.sh
 
 # If COMMIT_ID is not provided, try to get it from git
 if [ -z "${COMMIT_ID:-}" ]; then
-	if [ -d "./apps" ] && [ -d "./packages" ]; then
-		# Fetch the latest commit ID for each directories
-		COMMIT_ID1=$(cd "./apps" && git log --pretty=tformat:"%H" -n1 .)
-		COMMIT_ID2=$(cd "./packages" && git log --pretty=tformat:"%H" -n1 .)
+	if [ -d "applications/${MODULE}" ]; then
+		FULL_COMMIT_ID=$(cd "applications/${MODULE}/" && git log --pretty=tformat:"%H" -n1 .)
+		export COMMIT_ID="${FULL_COMMIT_ID:0:7}"
+		echo "Using commit ID from git: ${COMMIT_ID}"
 
-		echo "apps latest commit id: $COMMIT_ID1"
-		echo "packages latest commit id: $COMMIT_ID2"
-
-		# Compare the commits and get the later one
-		if [ "$COMMIT_ID1" = "$COMMIT_ID2" ]; then
-			echo "both directory are in the same commit"
-			LATEST_COMMIT_ID="$COMMIT_ID1"
+		# Check if this is a release tag build and retag the image accordingly
+		if [[ -n "${TAG_NAME}" ]]; then
+			gcloud container images add-tag "${REGISTRY_URL}/${PROJECT}/${MODULE}:${COMMIT_ID}" "${REGISTRY_URL}/${PROJECT}/${MODULE}:${TAG_NAME}"
 		else
-			LATEST_COMMIT_ID=$(git rev-list "$COMMIT_ID1" "$COMMIT_ID2")
+			echo "Not a release tag build (TAG_NAME: ${TAG_NAME:-not set}), skipping image tagging"
 		fi
-
-		# Get the short version of the latest commit ID
-		export COMMIT_ID="${LATEST_COMMIT_ID:0:7}"
-		echo "Using latest commit ID between packages and plugin directories: ${COMMIT_ID}"
 	else
 		echo "Warning: COMMIT_ID not provided and could not be determined from git"
 		echo "Deployment will proceed with provided COMMIT_ID: ${COMMIT_ID:-not provided}"
@@ -48,8 +40,8 @@ VALUES_FILES=$(find . -type f -iname "values.yaml" | sort)
 run_deploy() {
 	local log_file=$1
 	local values_file=$2
-	
-	{		
+
+	{
 		SUBMODULE="$(basename "$(dirname "${values_file}")")"
 		if [[ "${SUBMODULE}" != "." ]]; then
 			cd "${SUBMODULE}"
@@ -70,8 +62,7 @@ run_deploy() {
 		prepare_helm_values
 		collect_helm_values
 		deploy_helm_release
-		show_post_deployment_info
-		
+
 		echo "=== Deployment completed for: ${MODULE} ==="
 
 		MODULE=${BASE_MODULE}
@@ -117,7 +108,7 @@ for values_file in ${VALUES_FILES}; do
 	PIDS+=("$pid")
 	LOG_FILES+=("$log_file")
 	VALUES_FILES_ARRAY+=("$values_file")
-	
+
 	echo "[$(( ${#PIDS[@]} ))] Started deployment for: ${values_file} (PID: $pid)"
 done
 

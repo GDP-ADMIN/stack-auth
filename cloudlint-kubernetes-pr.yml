@@ -1,0 +1,48 @@
+steps:
+  - id: Generate Google Token
+    name: gcr.io/cloud-builders/gcloud
+    dir: 'deployment/kubernetes/helm-values/'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'gcloud auth print-access-token > token.key'
+      
+  - id: Decrypt Environment Variables
+    dir: 'deployment/kubernetes/helm-values/'
+    name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args: ['decrypt.sh']
+    waitFor: ['-']
+
+  - id: Login Helm Registry
+    dir: 'deployment/kubernetes/helm-values/'
+    name: 'gcr.io/${PROJECT_ID}/deployer:teleport'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'cat token.key | helm registry login -u oauth2accesstoken --password-stdin asia-southeast2-docker.pkg.dev'
+
+  - id: Helm Lint
+    name: 'gcr.io/${PROJECT_ID}/deployer:teleport'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -ae
+        source /root/shared.sh
+        helm_lint
+    env:
+      - 'PROJECT_ID=${PROJECT_ID}'
+      - 'PROJECT=${_PROJECT}'
+      - 'MODULE=${_MODULE}'
+      - 'COMMIT_ID=${_COMMIT_ID}'
+      - 'ENVIRONMENT=${_ENVIRONMENT}'
+  
+substitutions:
+  _REGISTRY_URL: "asia-southeast2-docker.pkg.dev/${PROJECT_ID}/projects"
+  _PROJECT: "gen-ai-template"
+  _GITHUB_USER: "GDP-ADMIN"
+
+timeout: 10m
+
+tags: ["stack-auth", "helm-lint", "pull-request", "${_MODULE}"] 

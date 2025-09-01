@@ -30,13 +30,10 @@ strategy:
     maxUnavailable: "0"
 
 configmap:
-  create: true
-  configmapRef:
-    name: stackauth-server-configmap
+  create: false
+
 secret:
-  create: true
-  secretRef:
-    name: stackauth-server-secret
+  create: false
 
 resources:
   limits:
