@@ -14,7 +14,7 @@ gen_key() {
 
 gen_uuid() {
   if command -v uuidgen >/dev/null 2>&1; then
-    uuidgen | tr 'A-Z' 'a-z'
+    uuidgen | tr '[:upper:]' '[:lower:]'
   else
     python3 -c 'import uuid; print(str(uuid.uuid4()).lower())'
   fi
