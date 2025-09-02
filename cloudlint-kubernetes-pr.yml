@@ -26,14 +26,14 @@ steps:
 
   - id: Login Helm Registry
     dir: 'deployment/kubernetes/helm-values/'
-    name: 'gcr.io/${PROJECT_ID}/deployer:teleport-test'
+    name: 'gcr.io/${PROJECT_ID}/deployer:teleport'
     entrypoint: 'bash'
     args:
       - '-c'
       - 'cat token.key | helm registry login -u oauth2accesstoken --password-stdin asia-southeast2-docker.pkg.dev'
 
   - id: Helm Lint
-    name: 'gcr.io/${PROJECT_ID}/deployer:teleport-test'
+    name: 'gcr.io/${PROJECT_ID}/deployer:teleport'
     entrypoint: 'bash'
     args:
       - '-c'
