@@ -1,7 +1,6 @@
 replicaCount: 1
 
 image:
-  namespace: gen-ai-template-prod
   pullPolicy: IfNotPresent
   pullSecret: gcr-secret
   repositoryUrl: asia-southeast2-docker.pkg.dev/${PROJECT_ID}/projects/stack-auth/server
@@ -30,13 +29,10 @@ strategy:
     maxUnavailable: "0"
 
 configmap:
-  create: true
-  configmapRef:
-    name: stackauth-server-configmap
+  create: false
+
 secret:
-  create: true
-  secretRef:
-    name: stackauth-server-secret
+  create: false
 
 resources:
   limits:
@@ -47,7 +43,6 @@ resources:
 
 pvc:
   create: false
-
 
 ingress:
   name: stackauth-server

@@ -1,0 +1,62 @@
+steps:
+  - id: Generate Google Token
+    name: gcr.io/cloud-builders/gcloud
+    dir: 'deployment/kubernetes/helm-values/'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'gcloud auth print-access-token > token.key'
+  
+  - id: Download Kubernetes Config
+    name: 'gcr.io/cloud-builders/gcloud'
+    secretEnv: ['TELEPORT']
+    entrypoint: 'bash'
+    args: ['-c', 'echo "$$TELEPORT" >> /.kube/config']
+    volumes:
+    - name: 'kubeconfig'
+      path: '/.kube'
+    waitFor: ["-"]
+      
+  - id: Decrypt Environment Variables
+    dir: 'deployment/kubernetes/helm-values/'
+    name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args: ['decrypt.sh']
+    waitFor: ['-']
+
+  - id: Login Helm Registry
+    dir: 'deployment/kubernetes/helm-values/'
+    name: 'gcr.io/${PROJECT_ID}/deployer:teleport'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'cat token.key | helm registry login -u oauth2accesstoken --password-stdin asia-southeast2-docker.pkg.dev'
+
+  - id: Helm Lint
+    name: 'gcr.io/${PROJECT_ID}/deployer:teleport'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -ae
+        source /root/shared.sh
+        helm_lint
+    env:
+      - 'KUBECONFIG=/.kube/config'
+    volumes:
+    - name: 'kubeconfig'
+      path: /.kube
+
+substitutions:
+  _REGISTRY_URL: "asia-southeast2-docker.pkg.dev/${PROJECT_ID}/projects"
+  _PROJECT: "gen-ai-template"
+  _GITHUB_USER: "GDP-ADMIN"
+
+timeout: 10m
+
+availableSecrets:
+  secretManager:
+  - versionName: 'projects/$PROJECT_ID/secrets/${_KUBECONFIG_SECRET_NAME}/versions/latest'
+    env: 'TELEPORT'
+
+tags: ["gen-ai-template", "helm-lint", "pull-request"]

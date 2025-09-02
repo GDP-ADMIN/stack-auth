@@ -57,9 +57,11 @@ steps:
     env:
       - 'PROJECT_ID=${PROJECT_ID}'
       - 'PROJECT=${_PROJECT}'
+      - 'REGISTRY_URL=${_REGISTRY_URL}'
       - 'MODULE=${_MODULE}'
       - 'COMMIT_ID=${_COMMIT_ID}'
       - 'ENVIRONMENT=${_ENVIRONMENT}'
+      - 'TAG_NAME=${TAG_NAME}'
       - 'KUBECONFIG=/.kube/config'
     volumes:
     - name: 'kubeconfig'
