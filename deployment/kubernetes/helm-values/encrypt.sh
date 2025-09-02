@@ -136,7 +136,7 @@ encrypt_directory() {
 
     # Find all files that should be encrypted (exclude .enc files and common non-secret files)
     local files_to_encrypt
-    files_to_encrypt=$(find "$dir_path" -type f \( -name 'values-secret.yaml' -o -name '*.secret' -o -name '*.key' -o -name '*.pem' -o -name '*.crt' \) ! -name '*.enc')
+    files_to_encrypt=$(find "$dir_path" -type f \( -name 'values-secret.yaml' -o -name 'secret.yaml' -o -name '*.secret' -o -name '*.key' -o -name '*.pem' -o -name '*.crt' \) ! -name '*.enc')
 
     if [ -z "$files_to_encrypt" ]; then
         print_status "No files to encrypt found in: $dir_path"
@@ -156,7 +156,7 @@ encrypt_directory() {
                 encrypted_count=$((encrypted_count + 1))
             fi
         fi
-    done < <(find "$dir_path" -type f \( -name 'values-secret.yaml' -o -name '*.secret' -o -name '*.key' -o -name '*.pem' -o -name '*.crt' \) ! -name '*.enc' -print0)
+    done < <(find "$dir_path" -type f \( -name 'values-secret.yaml' -o -name 'secret.yaml' -o -name '*.secret' -o -name '*.key' -o -name '*.pem' -o -name '*.crt' \) ! -name '*.enc' -print0)
 
     print_status "Encryption summary for $dir_path: $success_count/$total_count files processed, $encrypted_count actually encrypted"
 

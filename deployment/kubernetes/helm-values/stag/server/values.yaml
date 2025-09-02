@@ -1,7 +1,6 @@
 replicaCount: 1
 
 image:
-  namespace: gen-ai-template-stag
   pullPolicy: IfNotPresent
   pullSecret: gcr-secret
   repositoryUrl: asia-southeast2-docker.pkg.dev/${PROJECT_ID}/projects/stack-auth/server
