@@ -96,6 +96,7 @@ options:
 
 substitutions:
   _PROJECT: 'gen-ai-template'
+  _REGISTRY_URL: "asia-southeast2-docker.pkg.dev/${PROJECT_ID}/projects"
 
 availableSecrets:
   secretManager:
